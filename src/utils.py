@@ -4,6 +4,7 @@ from aiohttp import ClientSession, ClientResponse
 from bs4 import BeautifulSoup
 from tenacity import retry
 from loguru import logger
+from funcy import chunks
 
 
 @retry
@@ -34,10 +35,11 @@ def parse_links(soup: BeautifulSoup):
 
 
 async def get_data(session: ClientSession, url: str):
-    tasks = []
-    for link in await get_items_link(session, url):
-        tasks.append(asyncio.create_task(parse_data(session, link)))
-    await asyncio.gather(*tasks)
+    for chunk in list(chunks(5, await get_items_link(session, url))):
+        tasks = []
+        for link in chunk:
+            tasks.append(asyncio.create_task(parse_data(session, link)))
+        await asyncio.gather(*tasks)
 
 
 async def parse_data(session: ClientSession, url):
@@ -47,6 +49,7 @@ async def parse_data(session: ClientSession, url):
     price = soup.find('span', id='price').text
     images = soup.find_all('div', class_='item text-center')
     images = [i.find('a')['href'] for i in images]
+    images.append(f"https://xn----8sbgjyicscimifi4nb5b.xn--p1ai{soup.find('a', id='picture_orig')['href']}")
     description = soup.find('div', id='tab-description').text
     options = soup.find('div', id='tab-specification').find_all('tr')
     options = ', '.join([': '.join([j.text for j in i.find_all('td')]) for i in options])
