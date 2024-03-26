@@ -32,6 +32,5 @@ URLS = [
 'https://xn----8sbgjyicscimifi4nb5b.xn--p1ai/katalog/category/savushka-black.html',
 'https://xn----8sbgjyicscimifi4nb5b.xn--p1ai/katalog/category/aksessuary-savushka.html',
 'https://xn----8sbgjyicscimifi4nb5b.xn--p1ai/katalog/category/dopolnitelnoe-oborudovanie-romana.html',
-'https://xn----8sbgjyicscimifi4nb5b.xn--p1ai/katalog/category/igrovye-kompleksy-dlya.html',
-'https://xn----8sbgjyicscimifi4nb5b.xn--p1ai/katalog/category/igrovye-kompleksy-dlya-starshego-vozrasta.html',
+
 ]
