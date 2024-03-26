@@ -61,7 +61,6 @@ async def parse_data(session: ClientSession, url, cat: int):
     options = ', '.join([': '.join([j.text for j in i.find_all('td')]) for i in options])
     cat = soup.find('ol', class_='breadcrumb').find_all('li')[cat].text
 
-    # print(title, article, price, images, description, options, cat, sep='\n\n')
     return Item(
         title=title,
         article=article,
