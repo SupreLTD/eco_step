@@ -15,5 +15,6 @@ async def get_items_link(session: ClientSession, url: str) -> list:
     data = []
     category = None
 
+
 def parse_links(soup: BeautifulSoup):
     pass
