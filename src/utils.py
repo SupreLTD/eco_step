@@ -18,12 +18,11 @@ async def get_html(session: ClientSession, url: str) -> ClientResponse.text:
         return await response.text()
 
 
-async def get_items_link(session: ClientSession, url: str) -> list:
+async def get_items_link(session: ClientSession, url: str) -> list[str]:
     links = []
     for i in range(1, 1000):
         link = f"{url}/{i}.html?tmpl=ajax"
         response_data = await get_html(session, link)
-        # print(response_data.strip())
         if not response_data.strip():
             break
         links.extend(parse_links(BeautifulSoup(response_data, 'lxml')))
@@ -31,13 +30,13 @@ async def get_items_link(session: ClientSession, url: str) -> list:
     return links
 
 
-def parse_links(soup: BeautifulSoup):
+def parse_links(soup: BeautifulSoup) -> list[str]:
     data = soup.find_all('h3')
     data = [f"https://xn----8sbgjyicscimifi4nb5b.xn--p1ai{i.find('a')['href']}" for i in data]
     return data
 
 
-async def get_data(session: ClientSession, url: str, cat: int):
+async def get_data(session: ClientSession, url: str, cat: int) -> list[Item]:
     data = []
     for chunk in list(chunks(10, await get_items_link(session, url))):
         tasks = []
@@ -47,7 +46,7 @@ async def get_data(session: ClientSession, url: str, cat: int):
     return data
 
 
-async def parse_data(session: ClientSession, url, cat: int):
+async def parse_data(session: ClientSession, url, cat: int) -> Item:
     soup = BeautifulSoup(await get_html(session, url), 'lxml')
     title = soup.find('h2', class_='first').text
     article = soup.find('ul', class_='list-unstyled').find('strong').text
@@ -73,7 +72,7 @@ async def parse_data(session: ClientSession, url, cat: int):
     )
 
 
-def write_to_excel(data: list[Item]):
+def write_to_excel(data: list[Item]) -> None:
     columns = ['Название', 'Артикул', 'Цена', 'Изображения', 'Описание', 'Характеристики', 'Раздел', 'Ссылка']
     data = [[i.title, i.article, i.price, i.images, i.description, i.options, i.cat, i.url] for i in data]
     df = pd.DataFrame(data, columns=columns)
