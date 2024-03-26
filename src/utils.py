@@ -5,6 +5,9 @@ from bs4 import BeautifulSoup
 from tenacity import retry
 from loguru import logger
 from funcy import chunks
+import pandas as pd
+
+from .models import Item
 
 
 @retry
@@ -34,15 +37,17 @@ def parse_links(soup: BeautifulSoup):
     return data
 
 
-async def get_data(session: ClientSession, url: str):
-    for chunk in list(chunks(5, await get_items_link(session, url))):
+async def get_data(session: ClientSession, url: str, cat: int):
+    data = []
+    for chunk in list(chunks(10, await get_items_link(session, url))):
         tasks = []
         for link in chunk:
-            tasks.append(asyncio.create_task(parse_data(session, link)))
-        await asyncio.gather(*tasks)
+            tasks.append(asyncio.create_task(parse_data(session, link, cat)))
+        data += await asyncio.gather(*tasks)
+    return data
 
 
-async def parse_data(session: ClientSession, url):
+async def parse_data(session: ClientSession, url, cat: int):
     soup = BeautifulSoup(await get_html(session, url), 'lxml')
     title = soup.find('h2', class_='first').text
     article = soup.find('ul', class_='list-unstyled').find('strong').text
@@ -50,9 +55,27 @@ async def parse_data(session: ClientSession, url):
     images = soup.find_all('div', class_='item text-center')
     images = [i.find('a')['href'] for i in images]
     images.append(f"https://xn----8sbgjyicscimifi4nb5b.xn--p1ai{soup.find('a', id='picture_orig')['href']}")
+    images = ', '.join(images)
     description = soup.find('div', id='tab-description').text
     options = soup.find('div', id='tab-specification').find_all('tr')
     options = ', '.join([': '.join([j.text for j in i.find_all('td')]) for i in options])
-    cat = soup.find('ol', class_='breadcrumb').find_all('li')[-2].text
+    cat = soup.find('ol', class_='breadcrumb').find_all('li')[cat].text
 
-    print(title, article, price, images, description, options, cat, sep='\n\n')
+    # print(title, article, price, images, description, options, cat, sep='\n\n')
+    return Item(
+        title=title,
+        article=article,
+        price=price,
+        images=images,
+        description=description,
+        options=options,
+        cat=cat,
+        url=url
+    )
+
+
+def write_to_excel(data: list[Item]):
+    columns = ['Название', 'Артикул', 'Цена', 'Изображения', 'Описание', 'Характеристики', 'Раздел', 'Ссылка']
+    data = [[i.title, i.article, i.price, i.images, i.description, i.options, i.cat, i.url] for i in data]
+    df = pd.DataFrame(data, columns=columns)
+    df.to_excel('eco_step.xlsx', index=False)
